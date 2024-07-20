@@ -1,0 +1,80 @@
+pipeline {
+    agent none
+    tools {
+        maven 'mymaven'
+    }
+    stages { 
+        stage('Clone Repository') {
+            agent {label 'dev-node || int-node || prod-node'}
+           steps {
+            git credentialsId: 'github-token', url: 'https://github.com/ashishdubey195/Maven-nodejs-SkillUp-project.git', branch: 'master'
+        } 
+    }        
+        stage('Build Java Code') {
+            agent {label 'dev-node || int-node || prod-node'}
+            steps {
+                sh 'mvn -f addressbook_main/pom.xml clean install package'
+            }
+        }
+        stage('Build Node.js Code') {
+            agent {label 'dev-node || int-node || prod-node'}
+            steps {
+                sh 'npm install'
+                sh 'npm test'
+                sh 'npm run build'
+            }
+        }
+        stage('Build Image') {
+            agent {label 'dev-node || int-node || prod-node'}
+            steps {
+                sh 'docker build -t my-node-app:1.0 .'
+            }
+        }
+        stage('Run Container') {
+            agent {label 'dev-node || int-node || prod-node'}
+            steps {
+                script {
+                    sh '''
+                    docker stop my-node-app-container || true
+                    docker rm my-node-app-container || true
+                    '''
+                    sh 'docker run -d -p 6000:3000 --name my-node-app-container my-node-app:1.0'
+                }
+            }
+        }
+        stage('Setup') {
+            agent {label 'dev-node || int-node || prod-node'}
+            steps {
+                
+                script {
+                    def dir = '/home/jenkins/workspace/skillup-project/addressbook_main'
+                    sh "mkdir -p ${dir}"
+                    sh "chmod 777 ${dir}"
+                }
+            }
+        }
+         stage('Build Image for addressbook') {
+            agent {label 'dev-node || int-node || prod-node'}
+               steps {
+                dir('/home/jenkins/workspace/skillup-project//addressbook_main/') {
+                    sh 'docker build -t myaddressbook-app .'
+                }
+            }
+        }
+         stage('Bulid Container for addressbook image') {
+            agent {label 'dev-node || int-node || prod-node'}
+            steps {
+                script {
+                      sh '''                        
+                       docker stop  myaddressbook-container || true
+                       docker rm myaddressbook-container || true
+                       '''
+                       
+                       sh 'docker run -d --name myaddressbook-container -p 2000:8080 myaddressbook-app'
+                }
+            }
+        }
+    
+    }
+}
+

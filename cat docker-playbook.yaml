@@ -1,0 +1,32 @@
+---
+
+- hosts: all
+  become: true
+  become_user: root
+  tasks:
+    - name: Update package
+      apt: update_cache=yes
+    - name: Add Docker GPG key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+    - name: Add repository for Docker
+      apt_repository:
+        repo: 'deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable'
+        state: present
+      notify:
+        - update registry
+    - name: Install Docker
+      apt:
+        name: docker-ce  # Specify the package name for Docker CE
+        state: present
+        update_cache: yes  # Ensure package cache is updated before installation
+    - name: Add Jenkins user to Docker group
+      user:
+        name: jenkins
+        groups: docker
+        append: yes
+  handlers:
+    - name: update registry
+      apt:
+        update_cache: yes

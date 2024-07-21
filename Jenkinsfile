@@ -1,7 +1,10 @@
 pipeline {
-    agent none
+    agent any
     tools {
         maven 'mymaven'
+    }
+    environment {
+        DOCKERHUB_CREDENTIALS_ID='dockerhub-id'
     }
     stages { 
         stage('Clone Repository') {
@@ -65,7 +68,7 @@ pipeline {
             agent {label 'dev-node || int-node || prod-node'}
             steps {
                 script {
-                      sh '''                        
+                  sh '''                        
                        docker stop  myaddressbook-container || true
                        docker rm myaddressbook-container || true
                        '''
@@ -73,8 +76,20 @@ pipeline {
                        sh 'docker run -d --name myaddressbook-container -p 2000:8080 myaddressbook-app'
                 }
             }
-        }
-    
+          }
+          stage('images to dockerhub') {
+            agent {label 'dev-node || int-node || prod-node'}
+            steps {
+                script {
+                    withDockerRegistry(credentialsId: 'dockerhub-id', url: ' https://index.docker.io/v1/'){
+                      sh 'docker tag my-node-app:1.0 ashishdubey195/my-node-app:1.0'
+                      sh 'docker push  ashishdubey195/my-node-app:1.0'
+                      sh 'docker tag myaddressbook-app ashishdubey195/myaddressbook-app:latest'
+                      sh 'docker push ashishdubey195/myaddressbook-app:latest'
+                    }    
+                }
+                        
+            } 
+          }     
     }
-}
-
+}    

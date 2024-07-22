@@ -2,6 +2,8 @@
 - hosts: all
   become: true
   tasks:
+    - name: update package cache
+      apt: update_cache=yes
     - name: Ensure required packages are installed
       apt:
         name:

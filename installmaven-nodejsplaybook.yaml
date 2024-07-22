@@ -9,7 +9,6 @@
         name:
           - wget
           - tar
-          - gnupg2
           - curl
         state: present
     - name: Ensure Jenkins user can run all commands without a password

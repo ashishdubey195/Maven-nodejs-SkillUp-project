@@ -1,9 +1,31 @@
----
 - hosts: all
   become: true
   tasks:
-    - name: update package cache
-      apt: update_cache=yes
+    - name: Gather facts
+      setup:
+
+    - name: Display distribution codename
+      debug:
+        msg: "The distribution codename is {{ ansible_lsb.codename }}"
+
+    - name: Update package lists
+      apt:
+        update_cache: yes
+
+    - name: Upgrade all packages
+      apt:
+        upgrade: dist
+
+    - name: Fix broken packages
+      apt:
+        upgrade: 'yes'
+        autoclean: 'yes'
+        autoremove: 'yes'
+
+    - name: Clear apt cache
+      apt:
+        autoclean: yes
+
     - name: Ensure required packages are installed
       apt:
         name:
@@ -11,17 +33,17 @@
           - tar
           - curl
         state: present
-    - name: Ensure Jenkins user can run all commands without a password
-      lineinfile:
-        path: /etc/sudoers
-        line: 'jenkins ALL=NOPASSWD:ALL'
-        state: present
+
     - name: Install OpenJDK 17 JDK
-      apt: name=openjdk-17-jdk state=present
+      apt:
+        name: openjdk-17-jdk
+        state: present
+
     - name: Set JAVA_HOME using template
       template:
-       src: templates/java_home.j2
-       dest: root/
+        src: templates/java_home.j2
+        dest: /root/java_home
+
     - name: Download Maven
       get_url:
         url: https://dlcdn.apache.org/maven/maven-3/3.9.8/binaries/apache-maven-3.9.8-bin.tar.gz
@@ -42,19 +64,6 @@
         dest: /usr/share/maven
         mode: '0755'
 
-
-    - name: Add Nodesource repository for Node.js
-      shell: curl -fsSL https://deb.nodesource.com/setup_16.x | sudo -E bash -
-
-
-    - name: Install Node.js
-      apt:
-        name: nodejs
-        state: present
-    - name: Install npm
-      apt:
-        name: npm
-        state: present
     - name: Verify Maven installation
       shell: . /usr/share/maven && mvn -version
       register: maven_version
@@ -62,15 +71,42 @@
     - debug:
         msg: "{{ maven_version.stdout }}"
 
+    - name: Install NVM
+      shell: |
+        curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.4/install.sh | bash
+      args:
+        executable: /bin/bash
+
+    - name: Set up NVM environment variables
+      copy:
+        content: |
+          export NVM_DIR="$HOME/.nvm"
+          [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+          [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
+        dest: /root/.nvm_env
+        mode: '0644'
+
+    - name: Source NVM environment variables and install Node.js
+      shell: |
+        source /root/.nvm_env
+        nvm install node
+        nvm alias default node
+      args:
+        executable: /bin/bash
+
     - name: Verify Node.js installation
-      command: node -v
+      shell: |
+        source /root/.nvm_env
+        node -v
       register: node_version
 
     - debug:
         msg: "{{ node_version.stdout }}"
 
     - name: Verify npm installation
-      command: npm -v
+      shell: |
+        source /root/.nvm_env
+        npm -v
       register: npm_version
 
     - debug:
@@ -82,17 +118,22 @@
         state: directory
 
     - name: Initialize npm project
-      shell: npm init -y
+      shell: |
+        source /root/.nvm_env
+        npm init -y
       args:
         chdir: /root/myapp
+
     - name: Install express package
-      npm:
-        name: express
-        path: /root/myapp
-        state: present
+      shell: |
+        source /root/.nvm_env
+        npm install express
+      args:
+        chdir: /root/myapp
 
     - name: List the contents of the application directory
       command: ls -l /root/myapp
+
     - name: Create index.js file
       copy:
         dest: /root/myapp/index.js
@@ -108,10 +149,14 @@
           app.listen(port, () => {
             console.log(`Example app listening on port ${port}`);
           });
+
     - name: Install mocha as a development dependency
-      shell: npm install --save-dev mocha
+      shell: |
+        source /root/.nvm_env
+        npm install --save-dev mocha
       args:
         chdir: /root/myapp
+
     - name: Update package.json file
       copy:
         dest: /root/myapp/package.json
@@ -134,6 +179,7 @@
               "mocha": "^10.2.0"
             }
           }
+
     - name: Create test directory
       file:
         path: /root/myapp/test
@@ -145,10 +191,15 @@
         state: touch
 
     - name: Run npm test
-      shell: npm test
+      shell: |
+        source /root/.nvm_env
+        npm test
       args:
         chdir: /root/myapp
+
     - name: Run npm build
-      shell: npm run build
+      shell: |
+        source /root/.nvm_env
+        npm run build
       args:
         chdir: /root/myapp

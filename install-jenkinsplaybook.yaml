@@ -1,0 +1,36 @@
+- hosts: all
+  become: true
+  become_user: root
+  tasks:
+  - name: Update package cache
+    apt:
+      update_cache: yes
+  - name: Install required packages
+    apt:
+      name: openjdk-17-jdk
+      state: present
+  - name: Download Jenkins key
+    get_url:
+      url: https://pkg.jenkins.io/debian/jenkins.io-2023.key
+      dest: /usr/share/keyrings/jenkins-keyring.asc
+  - name: Add Jenkins repository
+    apt_repository:
+      repo: "deb [signed-by=/usr/share/keyrings/jenkins-keyring.asc] https://pkg.jenkins.io/debian binary/"
+      state: present
+    notify: Update Cache
+  - meta: flush_handlers
+  - name: Install Jenkins
+    apt:
+      name: jenkins
+      state: present
+  - meta: flush_handlers
+  - name: Start Jenkins service
+    service:
+      name: jenkins
+      state: started
+      enabled: yes
+  handlers:
+  - name: Update Cache
+    apt:
+      update_cache: yes
+~

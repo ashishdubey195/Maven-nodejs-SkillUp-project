@@ -19,7 +19,7 @@
 
     - name: Add HashiCorp APT repository
       apt_repository:
-        repo: "deb [arch=amd64] https://apt.releases.hashicorp.com {{ ansible_distribution_release|lower }} main"
+        repo: "deb [arch=amd64] https://apt.releases.hashicorp.com {{ ansible_distribution_release | lower }} main"
         state: present
 
     - name: Update APT cache
@@ -30,3 +30,11 @@
       apt:
         name: terraform
         state: present
+
+    - name: Verify Terraform installation
+      command: terraform --version
+      register: terraform_version
+
+    - name: Display Terraform version
+      debug:
+        msg: "Terraform version: {{ terraform_version.stdout }}"

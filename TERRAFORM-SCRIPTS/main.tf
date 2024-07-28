@@ -23,7 +23,9 @@ resource "azurerm_resource_group" "myrg1" {
     Team        = "DevOps"
   }
 }
-
+variable "resource_group_name" {
+  type = string
+}
 # Create a virtual network
 resource "azurerm_virtual_network" "vnet" {
   name                = var.virtual_network_name

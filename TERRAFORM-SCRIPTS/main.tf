@@ -14,10 +14,6 @@ provider "azurerm" {
  }
 }
 
-variable "resource_group_name" {
-  type = string
-}
-
 resource "azurerm_resource_group" "myrg1" {
   name     = "var.resource_group_name"
   location = "Central India"

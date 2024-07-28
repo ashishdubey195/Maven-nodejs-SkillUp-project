@@ -122,7 +122,7 @@ resource "azurerm_virtual_machine" "vm" {
 }
 
   os_profile {
-    computer_name     =  var.computer_names[2]
+    computer_name     =  var.computer_names[0]
     admin_username    = "adminuser"
     admin_password    = "Rockwell@6459"
   }

@@ -15,7 +15,7 @@ provider "azurerm" {
 }
 
 resource "azurerm_resource_group" "myrg1" {
-  name     = var.resource_group_name
+  name     = "dev_Organisation"
   location = "Central India"
 
   tags = {

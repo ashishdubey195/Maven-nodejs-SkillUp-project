@@ -14,7 +14,7 @@ provider "azurerm" {
  }
 }
 resource "azurerm_resource_group" "myrg1" {
-  name     = "var.resource_group_name"
+  name     = var.resource_group_name
   location = "Central India"
 
   tags = {
